@@ -94,7 +94,6 @@ const orderExists = (req, res, next) => {
 const orderIdMatches = (req, res, next) => {
     const { orderId } = req.params;
     const { data: { id }} = req.body;
-    //next({ message: `text1 ${id} text 2 ${orderId}`})
     if( id && id!==orderId){
         next({
             status: 400,
@@ -107,7 +106,8 @@ const orderIdMatches = (req, res, next) => {
 //Check if order status id valid
 const isOrdStatValid = (req, res, next) => {
     const { data: {status}} = req.body;
-    if(!status || status==="invalid"){
+    const statusList = ['pending', 'preparing', 'out-for-delivery', 'delivered']
+    if(!status || !statusList.includes(status)){
         next({
             status: 400,
             message: `Order must have a status of pending, preparing, out-for-delivery, delivered`
