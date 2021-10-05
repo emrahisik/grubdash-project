@@ -11,7 +11,7 @@ const nextId = require("../utils/nextId");
 //Check if the name is valid
  const isNameValid = (req, res, next) => {
     const { data:{ name } } = req.body;    
-    if( name===undefined ){
+    if( !name || name.length<=0 ){
         next({
             status: 400,
             message: 'Dish must include a name',
@@ -76,7 +76,7 @@ const isValidDish = (req, res, next) => {
 //Check dish exists
 const dishExists = (req, res, next) => {
     const { dishId } = req.params;
-    const foundDish = dishes.find(({id}) => id == dishId);
+    const foundDish = dishes.find(({id}) => id === dishId);
     if(foundDish){
         res.locals.dish = foundDish;
         return next();
@@ -90,16 +90,15 @@ const dishExists = (req, res, next) => {
 
 //Check if dish id in the req body (if provided) 
 //matches the dishId in the url
-const dishIdMathes = (req, res, next) => {
-    const { dish } = res.locals;    
+const dishIdMatches = (req, res, next) => {
+    const { data = {} } = req.body;
+    const { id } = data;    
     const { dishId } = req.params;
-    if(dish.id){
-        if(dish.id!=dishId){
+    if(id && id!==dishId){        
             next({
                 status: 400,
-                message: `Dish id does not match route id. Dish: ${dish.id}, Route: ${dishId}`
+                message: `Dish id does not match route id. Dish: ${id}, Route: ${dishId}`
             });
-        };
     };
     return next();
 }
@@ -145,5 +144,5 @@ module.exports = {
     list,
     create: [isValidDish, create],
     read: [dishExists, read],
-    update: [isValidDish, dishExists, dishIdMathes, update]
+    update: [dishExists, isValidDish, dishIdMatches, update]
 }

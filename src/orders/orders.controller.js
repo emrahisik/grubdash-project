@@ -55,7 +55,7 @@ const areDishesValid = (req, res, next) => {
 const isQuantityValid = (req, res, next) => {
     const { data: { dishes } } = req.body;
     dishes.forEach(({quantity},index) => {
-        if(!quantity || isNaN(quantity) || quantity<=0){
+        if(!quantity || typeof(quantity) !== "number" || quantity<=0){
             next({
                 status: 400,
                 message:`Dish ${index} must have a quantity that is an integer greater than 0`
@@ -86,10 +86,53 @@ const orderExists = (req, res, next) => {
     };
     next({
         status: 404,
-        message: `No matching order found!`,
+        message: `Order ${orderId} not found!`,
     });
 };
 
+//Check if order id in req (if provided) matches order id in url
+const orderIdMatches = (req, res, next) => {
+    const { orderId } = req.params;
+    const { data: { id }} = req.body;
+    //next({ message: `text1 ${id} text 2 ${orderId}`})
+    if( id && id!==orderId){
+        next({
+            status: 400,
+            message: `Order id does not match route id. Order: ${id}, Route: ${orderId}.`
+        });
+    };
+    return next();
+};
+
+//Check if order status id valid
+const isOrdStatValid = (req, res, next) => {
+    const { data: {status}} = req.body;
+    if(!status || status==="invalid"){
+        next({
+            status: 400,
+            message: `Order must have a status of pending, preparing, out-for-delivery, delivered`
+        });
+    };
+    if(status==="delivered"){
+        next({
+            status: 400,
+            message: `A delivered order cannot be changed`
+        });
+    };
+    return next();
+};
+
+//Check if order is pending
+const isOrdPending = (req, res, next) => {
+    const { order } = res.locals;
+    if(order.status !== "pending"){
+        next({
+            status: 400,
+            message: `An order cannot be deleted unless it is pending`
+        });
+    };
+    return next();
+}
 
 //List the orders
 const list = (req, res, next) => res.json({ data: orders });
@@ -111,11 +154,31 @@ const read = (req, res, next) => {
     res.json({ data: order });
 };
 
+//Update an order
+const update = (req, res, next) => {
+    const { order } = res.locals;
+    const { data: update } = req.body;
+    for(let prop in update){
+        if(update[prop]){
+        order[prop] = update[prop];
+        };
+    };
+    res.json({ data: order });
+};
 
+//delete an order
+const destroy = (req, res, next) => {
+    const { orderId } = req.params;
+    const index = orders.findIndex(({id}) => id===orderId);
+    orders.splice(index, 1);
+    res.sendStatus(204);
+}
 
 
 module.exports = {
     list,
     create:[isOrderValid, create],
     read: [orderExists, read],
+    update: [orderExists, isOrderValid, orderIdMatches, isOrdStatValid, update],
+    delete: [orderExists, isOrdPending, destroy],
 };
