@@ -91,8 +91,7 @@ const dishExists = (req, res, next) => {
 //Check if dish id in the req body (if provided) 
 //matches the dishId in the url
 const dishIdMatches = (req, res, next) => {
-    const { data = {} } = req.body;
-    const { id } = data;    
+    const { data:{id} = {} } = req.body; 
     const { dishId } = req.params;
     if(id && id!==dishId){        
             next({
